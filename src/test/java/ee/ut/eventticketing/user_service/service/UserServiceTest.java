@@ -3,6 +3,7 @@ package ee.ut.eventticketing.user_service.service;
 import ee.ut.eventticketing.user_service.domain.Role;
 import ee.ut.eventticketing.user_service.domain.User;
 import ee.ut.eventticketing.user_service.dto.JwtResponse;
+import ee.ut.eventticketing.user_service.dto.JwtValidationResponse;
 import ee.ut.eventticketing.user_service.dto.LoginRequest;
 import ee.ut.eventticketing.user_service.dto.RegisterRequest;
 import ee.ut.eventticketing.user_service.dto.RoleUpdateRequest;
@@ -200,5 +201,35 @@ class UserServiceTest {
         assertNotNull(response);
         assertEquals(Role.ADMIN, user.getRole());
         verify(userRepository, times(1)).save(user);
+    }
+
+    @Test
+    void validateToken_Success() {
+        // Arrange
+        String token = "validToken";
+        when(jwtUtil.validateToken(token)).thenReturn(true);
+        when(jwtUtil.extractUsername(token)).thenReturn("testuser");
+        when(jwtUtil.extractRole(token)).thenReturn("USER");
+
+        // Act
+        JwtValidationResponse response = userService.validateToken(token);
+
+        // Assert
+        assertTrue(response.isValid());
+        assertEquals("testuser", response.getUsername());
+        assertEquals("USER", response.getRole());
+    }
+
+    @Test
+    void validateToken_Fail() {
+        // Arrange
+        String token = "invalidToken";
+        when(jwtUtil.validateToken(token)).thenReturn(false);
+
+        // Act
+        JwtValidationResponse response = userService.validateToken(token);
+
+        // Assert
+        assertFalse(response.isValid());
     }
 }
