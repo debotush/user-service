@@ -232,4 +232,47 @@ class UserServiceTest {
         // Assert
         assertFalse(response.isValid());
     }
+
+    @Test
+    void register_DefaultsToUserRole_WhenRoleIsNull() {
+        // Arrange
+        registerRequest.setRole(null);
+        when(userRepository.findByUsername(anyString())).thenReturn(Optional.empty());
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
+        
+        // Capture the user object passed to save
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        UserResponse response = userService.register(registerRequest);
+
+        // Assert
+        assertEquals(Role.USER, response.getRole());
+    }
+
+    @Test
+    void updateProfile_PartialUpdate() {
+        // Arrange
+        UpdateProfileRequest partialRequest = new UpdateProfileRequest(null, null, "999999");
+        String originalFirstName = user.getFirstName();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenReturn(user);
+
+        // Act
+        userService.updateProfile(1L, partialRequest);
+
+        // Assert
+        assertEquals("999999", user.getPhoneNumber());
+        assertEquals(originalFirstName, user.getFirstName()); // Should not have changed
+    }
+
+    @Test
+    void updateProfile_ThrowsException_WhenUserNotFound() {
+        // Arrange
+        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        assertThrows(RuntimeException.class, () -> userService.updateProfile(99L, new UpdateProfileRequest()));
+    }
 }
